@@ -78,12 +78,22 @@ mod tests {
   #[test]
   fn it_works() {
     let mut data = [0x01];
-    assert_eq!(read::<u16, _>(&data[..]),  1);
+    assert_eq!(read::<u16, _>(&data[..]), 1);
     // data = [0xFF];
     // assert_eq!(read::<u16, _>(&data[..]), 127);
-    // data = [0x0F, 0x01];
-    // assert_eq!(read::<u32, _>(&data[..]), 128 + 15);
+    let mut data1 = [0xF, 0x00];
+    println!("{}", read::<u32, _>(&data1[..]));
+    assert_eq!(read::<u32, _>(&data1[..]), 15);
+
+    let mut data2 = [0x80, 0x1E];
+    assert_eq!(read::<u32, _>(&data2[..]), 0x0F00);
 
     // write(unsafe { BufWriter::new(cursor) }, 300 as u32);
+  }
+  #[test]
+  #[should_panic]
+  fn it_should_panic() {
+    let mut data = [0xFF];
+    read::<u32, _>(&data[..]);
   }
 }
