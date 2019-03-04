@@ -1,16 +1,21 @@
 #![allow(non_snake_case)]
 
-use std::io::{BufReader, BufWriter, Error, ErrorKind, Read, Write};
-use std::mem::size_of;
+use std::io::{Read, Write};
 use std::ops::{BitAnd, BitOrAssign, Shl};
 
+const MSB: u8 = 0x80;
+const REST: u8 = 0x7F;
 pub trait VarInt {
   fn parse(value: u128) -> Self;
+  fn retrieve(value: Self) -> u128;
 }
 
 impl VarInt for u64 {
   fn parse(data: u128) -> u64 {
     return data as u64;
+  }
+  fn retrieve(value: u64) -> u128 {
+    return value as u128;
   }
 }
 
@@ -18,11 +23,17 @@ impl VarInt for u32 {
   fn parse(data: u128) -> u32 {
     return data as u32;
   }
+  fn retrieve(value: u32) -> u128 {
+    return value as u128;
+  }
 }
 
 impl VarInt for u16 {
   fn parse(data: u128) -> u16 {
     return data as u16;
+  }
+  fn retrieve(value: u16) -> u128 {
+    return value as u128;
   }
 }
 
@@ -30,15 +41,10 @@ impl VarInt for u8 {
   fn parse(data: u128) -> u8 {
     return data as u8;
   }
+  fn retrieve(value: u8) -> u128 {
+    return value as u128;
+  }
 }
-
-// fn readByte(reader: Read, data: &mut [u8]) -> std::io::Result<()> {
-//   reader.read_exact(data);
-// }
-
-// fn writeByte(writer: Write, data: &mut [u8]) -> std::io::Result<()> {
-//   writer.write(data);
-// }
 
 pub fn read<T: VarInt, R: Read>(mut reader: R) -> T
 where
@@ -48,11 +54,8 @@ where
   for shift in (0..).step_by(7) {
     let mut piece = [0];
     reader.read_exact(&mut piece[..]).expect("Failed to read");
-    if (shift >= size_of::<T>() * 8 - 7) && piece[0] >= 1 << (size_of::<T>() * 8 - shift) {
-      panic!("Read Varint, value overflow")
-    }
-    temp |= ((piece[0] & 0x7f) as u128) << shift;
-    if (piece[0] & 0x80) == 0 {
+    temp |= ((piece[0] & REST) as u128) << shift;
+    if (piece[0] & MSB) == 0 {
       if piece[0] == 0 && shift != 0 {
         panic!("Read Varint, invalid value representation");
       }
@@ -62,38 +65,66 @@ where
   return T::parse(temp);
 }
 
-// fn write<T, W: Write>(writer: BufWriter<W>, value: T) {
-//   while value >= 0x80 {
-//     writeByte(writer, (value as u8 | 0x80) as [u8]);
-//     value >>= 7;
-//   }
-//   writeByte(writer, value as [u8]);
-// }
+fn write<T: VarInt, W: Write>(mut writer: W, value: T)
+where
+  T: From<u8> + BitAnd + BitOrAssign + Shl + VarInt,
+{
+  let mut temp = T::retrieve(value);
+  while temp >= 0x80 {
+    let mut piece = [0];
+    piece[0] = temp as u8 | 0x80;
+    writer.write(&piece).expect("Failed to write");
+    temp >>= 7;
+  }
+  let mut piece = [0];
+  piece[0] = temp as u8 | 0x80;
+  writer.write(&piece).expect("Failed to write");
+}
 
 #[cfg(test)]
 mod tests {
-  use super::read;
-  use std::io::{BufWriter, Cursor};
+  use super::{read, write};
+  use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
   #[test]
-  fn it_works() {
-    let mut data = [0x01];
+  fn it_should_read() {
+    let data0 = [0x01];
+    assert_eq!(read::<u8, _>(&data0[..]), 1);
+    let data = [0x01];
     assert_eq!(read::<u16, _>(&data[..]), 1);
-    // data = [0xFF];
-    // assert_eq!(read::<u16, _>(&data[..]), 127);
-    let mut data1 = [0xF, 0x00];
+    let data1 = [0xF, 0x00];
     println!("{}", read::<u32, _>(&data1[..]));
     assert_eq!(read::<u32, _>(&data1[..]), 15);
-
-    let mut data2 = [0x80, 0x1E];
+    let data2 = [0x80, 0x1E];
     assert_eq!(read::<u32, _>(&data2[..]), 0x0F00);
 
-    // write(unsafe { BufWriter::new(cursor) }, 300 as u32);
+    let data3 = [0x80, 0x1E, 0x11, 0x11, 0x11, 0x11];
+    println!("{}", read::<u64, _>(&data3[..]));
+    assert_eq!(read::<u64, _>(&data3[..]), 3840);
+  }
+
+  #[test]
+  fn it_should_write() {
+    let mut c = Cursor::new(Vec::new());
+    c.seek(SeekFrom::Start(0)).unwrap();
+    write::<u8, _>(c, 1 as u8);
+    let mut c1 = Cursor::new(Vec::new());
+    c1.seek(SeekFrom::Start(0)).unwrap();
+    write::<u16, _>(c1, 1 as u16);
+    let mut c2 = Cursor::new(Vec::new());
+    c2.seek(SeekFrom::Start(0)).unwrap();
+    write::<u32, _>(c2, 1 as u32);
+    let mut c3 = Cursor::new(Vec::new());
+    c3.seek(SeekFrom::Start(0)).unwrap();
+    write::<u64, _>(c3, 0x81 as u64);
+    // let mut out = Vec::new();
+    // c.read_to_end(&mut out).unwrap();
+    // println!("{:?}", c);
   }
   #[test]
   #[should_panic]
-  fn it_should_panic() {
-    let mut data = [0xFF];
+  fn it_should_panic_when_read() {
+    let data = [0xFF];
     read::<u32, _>(&data[..]);
   }
 }
