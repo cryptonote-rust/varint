@@ -3,6 +3,8 @@ name = "cryptonote-varint"
 version = "0.1.0"
 authors = ["calidion <calidion@gmail.com>"]
 edition = "2018"
+license = "GPLv3"
+description = "varint for cryptonote"
 
 [dependencies]
 
