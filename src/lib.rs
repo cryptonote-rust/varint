@@ -65,7 +65,7 @@ where
   return T::parse(temp);
 }
 
-fn write<T: VarInt, W: Write>(writer: &mut W, value: T)
+pub fn write<T: VarInt, W: Write>(writer: &mut W, value: T)
 where
   T: From<u8> + BitAnd + BitOrAssign + Shl + VarInt,
 {
