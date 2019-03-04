@@ -1,0 +1,19 @@
+[package]
+name = "cryptonote-varint"
+version = "0.1.0"
+authors = ["calidion <calidion@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+
+
+[dependencies.ed25519-dalek]
+version = "1.0.0-pre.1"
+
+[[bin]]
+name = "vigcoin-core"
+path = "src/lib.rs"
+
+[badges]
+travis-ci = { repository = "vigcoin/core-rs", branch = "master" }
+codecov = { repository = "vigcoin/core-rs", branch = "master", service = "github" }
