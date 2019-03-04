@@ -1,32 +1,3 @@
-
-//! Cryptonote varint implement
-//!
-//! ## Features
-//!   * read varint
-//!   * write varint
-//!
-//! ## Usage
-//! ```toml
-//! [dependencies]
-//! cryptonote-varint = "0.1"
-//! ```
-//!
-//! ## Usage
-//!
-//! 1. Write
-//! ```
-//!     let mut c = Cursor::new(Vec::new());
-//!     c.seek(SeekFrom::Start(0)).unwrap();
-//!     write::<u8, _>(&mut c, 1 as u8);
-//! ```
-
-//! 2. Read
-//! ```
-//!     let data0 = [0x01];
-//!     read::<u8, _>(&data0[..]);
-//! ```
-
-
 #![allow(non_snake_case)]
 
 use std::io::{Read, Write};
@@ -113,11 +84,9 @@ where
   writer.write(&piece).expect("Failed to write");
 }
 
-fn main () {}
-
 #[cfg(test)]
 mod tests {
-  use super::{read, write, main};
+  use super::{read, write};
   use std::io::{Cursor, Seek, SeekFrom};
 
   #[test]
@@ -179,7 +148,6 @@ mod tests {
   #[test]
   #[should_panic]
   fn it_should_panic_when_read() {
-    main();
     let data = [0xFF];
     read::<u32, _>(&data[..]);
   }
