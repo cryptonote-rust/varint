@@ -84,10 +84,12 @@ where
   writer.write(&piece).expect("Failed to write");
 }
 
+fn main () {}
+
 #[cfg(test)]
 mod tests {
-  use super::{read, write};
-  use std::io::{Cursor, Read, Seek, SeekFrom, Write};
+  use super::{read, write, main};
+  use std::io::{Cursor, Seek, SeekFrom};
 
   #[test]
   fn it_should_read() {
@@ -123,9 +125,6 @@ mod tests {
     let mut c4 = Cursor::new(Vec::new());
     c4.seek(SeekFrom::Start(0)).unwrap();
     write::<u64, _>(&mut c4, 300 as u64);
-    // assert_eq!(read::<u8, _>(&mut c), 1);
-
-    // println!("read out = {}\n", read::<u8, _>(&mut c));
     let cArr = c.get_ref();
     assert_eq!(cArr[0], 1);
 
@@ -147,14 +146,11 @@ mod tests {
     println!("c2 = {:?}\n", c2.get_ref());
     println!("c3 = {:?}\n", c3.get_ref());
     println!("c4 = {:?}\n", c4.get_ref());
-
-    // let mut out = Vec::new();
-    // c.read_to_end(&mut out).unwrap();
-    // println!("{:?}", c);
   }
   #[test]
   #[should_panic]
   fn it_should_panic_when_read() {
+    main();
     let data = [0xFF];
     read::<u32, _>(&data[..]);
   }

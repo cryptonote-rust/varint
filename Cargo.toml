@@ -6,10 +6,6 @@ edition = "2018"
 
 [dependencies]
 
-[[bin]]
-name = "cryptonote-varint"
-path = "src/lib.rs"
-
 [badges]
 travis-ci = { repository = "cryptonote-rust/varint", branch = "master" }
 codecov = { repository = "cryptonote-rust/varint", branch = "master", service = "github" }
