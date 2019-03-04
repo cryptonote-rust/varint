@@ -65,19 +65,22 @@ where
   return T::parse(temp);
 }
 
-fn write<T: VarInt, W: Write>(mut writer: W, value: T)
+fn write<T: VarInt, W: Write>(writer: &mut W, value: T)
 where
   T: From<u8> + BitAnd + BitOrAssign + Shl + VarInt,
 {
   let mut temp = T::retrieve(value);
   while temp >= 0x80 {
+    print!("temp = {}\n", temp);
+
     let mut piece = [0];
-    piece[0] = temp as u8 | 0x80;
+    piece[0] = temp as u8 | MSB;
     writer.write(&piece).expect("Failed to write");
     temp >>= 7;
   }
+  print!("temp = {}\n", temp);
   let mut piece = [0];
-  piece[0] = temp as u8 | 0x80;
+  piece[0] = temp as u8;
   writer.write(&piece).expect("Failed to write");
 }
 
@@ -107,16 +110,44 @@ mod tests {
   fn it_should_write() {
     let mut c = Cursor::new(Vec::new());
     c.seek(SeekFrom::Start(0)).unwrap();
-    write::<u8, _>(c, 1 as u8);
+    write::<u8, _>(&mut c, 1 as u8);
     let mut c1 = Cursor::new(Vec::new());
     c1.seek(SeekFrom::Start(0)).unwrap();
-    write::<u16, _>(c1, 1 as u16);
+    write::<u16, _>(&mut c1, 128 as u16);
     let mut c2 = Cursor::new(Vec::new());
     c2.seek(SeekFrom::Start(0)).unwrap();
-    write::<u32, _>(c2, 1 as u32);
+    write::<u32, _>(&mut c2, 129 as u32);
     let mut c3 = Cursor::new(Vec::new());
     c3.seek(SeekFrom::Start(0)).unwrap();
-    write::<u64, _>(c3, 0x81 as u64);
+    write::<u64, _>(&mut c3, 0xF1 as u64);
+    let mut c4 = Cursor::new(Vec::new());
+    c4.seek(SeekFrom::Start(0)).unwrap();
+    write::<u64, _>(&mut c4, 300 as u64);
+    // assert_eq!(read::<u8, _>(&mut c), 1);
+
+    // println!("read out = {}\n", read::<u8, _>(&mut c));
+    let cArr = c.get_ref();
+    assert_eq!(cArr[0], 1);
+
+    let cArr1 = c1.get_ref();
+    assert_eq!(cArr1[0], 128);
+    assert_eq!(cArr1[1], 1);
+    let cArr2 = c2.get_ref();
+    assert_eq!(cArr2[0], 129);
+    assert_eq!(cArr2[1], 1);
+
+    let cArr3 = c3.get_ref();
+    assert_eq!(cArr3[0], 241);
+    assert_eq!(cArr3[1], 1);
+    let cArr4 = c4.get_ref();
+    assert_eq!(cArr4[0], 0xAC);
+    assert_eq!(cArr4[1], 0x02);
+    println!("c = {:?}\n", c.get_ref());
+    println!("c1 = {:?}\n", c1.get_ref());
+    println!("c2 = {:?}\n", c2.get_ref());
+    println!("c3 = {:?}\n", c3.get_ref());
+    println!("c4 = {:?}\n", c4.get_ref());
+
     // let mut out = Vec::new();
     // c.read_to_end(&mut out).unwrap();
     // println!("{:?}", c);
