@@ -71,14 +71,11 @@ where
 {
   let mut temp = T::retrieve(value);
   while temp >= 0x80 {
-    print!("temp = {}\n", temp);
-
     let mut piece = [0];
     piece[0] = temp as u8 | MSB;
     writer.write(&piece).expect("Failed to write");
     temp >>= 7;
   }
-  print!("temp = {}\n", temp);
   let mut piece = [0];
   piece[0] = temp as u8;
   writer.write(&piece).expect("Failed to write");
